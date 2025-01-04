@@ -13,6 +13,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   RotateCcwIcon,
+  ShuffleIcon,
 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { ArtBlocksLockup } from "./ArtBlocksLockup";
@@ -114,7 +115,7 @@ export function TokenForm() {
           </button>
         </DrawerTrigger>
         <DrawerContent
-          className="sm:rounded-lg sm:inset-auto sm:mt-auto sm:left-2 sm:top-2 sm:bottom-2 sm:max-w-[400px]"
+          className="sm:rounded-lg sm:inset-auto sm:mt-auto sm:left-2 sm:top-2 sm:max-w-[400px]"
           style={
             { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
           }
@@ -201,7 +202,7 @@ export function TokenForm() {
                 loading={isLoading.invocations}
               />
             </div>
-            <JsonRpcUrlForm className="px-4" />
+            {/* <JsonRpcUrlForm className="px-4" />
             <DrawerFooter>
               <div className="flex items-center justify-between gap-2">
                 <a
@@ -219,7 +220,7 @@ export function TokenForm() {
                   Learn more <ArrowUpRight className="w-4 h-4 stroke-1" />
                 </a>
               </div>
-            </DrawerFooter>
+            </DrawerFooter> */}
           </div>
         </DrawerContent>
       </Drawer>
@@ -248,23 +249,39 @@ export function ContractSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          aria-expanded={open}
-          className={cn(
-            "flex text-body items-center justify-between w-full px-4 py-2 h-10 rounded-[2px] border border-border",
-            className
-          )}
-        >
-          <span className="overflow-hidden text-ellipsis">
-            <span className="mr-2">{label ?? val}</span>
-            {label ? (
-              <span className="text-xs text-muted-foreground">
-                ({val.slice(0, 6)}…{val.slice(-4)})
-              </span>
-            ) : null}
-          </span>
-          <ChevronsUpDown className="w-4 h-4 ml-2 opacity-50 stroke-1 shrink-0" />
-        </button>
+        <div className="flex gap-2 min-w-0">
+          <button
+            aria-expanded={open}
+            className={cn(
+              "flex text-body items-center justify-between w-full px-4 py-2 h-10 rounded-[2px] border border-border min-w-0",
+              className
+            )}
+          >
+            <span className="overflow-hidden text-ellipsis min-w-0">
+              <span className="mr-2">{label ?? val}</span>
+              {label ? (
+                <span className="text-xs text-muted-foreground">
+                  ({val.slice(0, 6)}…{val.slice(-4)})
+                </span>
+              ) : null}
+            </span>
+            <ChevronsUpDown className="w-4 h-4 ml-2 opacity-50 stroke-1 shrink-0" />
+          </button>
+          <button
+            className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-[2px] border border-border opacity-50 hover:opacity-100 transition-opacity",
+              className
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              const randomContract = supportedContracts[Math.floor(Math.random() * supportedContracts.length)];
+              handleChange(randomContract.address);
+            }}
+            title="Select random contract"
+          >
+            <ShuffleIcon className="w-4 h-4 stroke-1" />
+          </button>
+        </div>
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] h-[var(--radix-popover-content-available-height)] sm:h-auto p-0">
         <Command>
@@ -492,17 +509,34 @@ export function BoundNumericInput({
           min={min}
           max={max}
         />
-        <button
-          className="flex text-right opacity-50"
-          onClick={() => onValueChange((Number(value) + 1).toString())}
-          disabled={isIncrementDisabled}
-        >
-          <ChevronRightIcon
-            className={cn("w-4 h-4 stroke-1", {
-              "opacity-20": isIncrementDisabled,
-            })}
-          />
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="flex text-right opacity-50"
+            onClick={() => onValueChange((Number(value) + 1).toString())}
+            disabled={isIncrementDisabled}
+          >
+            <ChevronRightIcon
+              className={cn("w-4 h-4 stroke-1", {
+                "opacity-20": isIncrementDisabled,
+              })}
+            />
+          </button>
+          <button
+            className="flex text-right opacity-50"
+            onClick={() => {
+              if (min === undefined || max === undefined) return;
+              const randomValue = Math.floor(Math.random() * (max - min + 1)) + min;
+              onValueChange(randomValue.toString());
+            }}
+            disabled={min === undefined || max === undefined}
+          >
+            <ShuffleIcon
+              className={cn("w-4 h-4 stroke-1", {
+                "opacity-20": min === undefined || max === undefined,
+              })}
+            />
+          </button>
+        </div>
       </div>
     </div>
   );
