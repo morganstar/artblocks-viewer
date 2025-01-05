@@ -12,6 +12,8 @@ import {
   PanelBottomOpen,
   PanelLeftClose,
   PanelLeftOpen,
+  PlayIcon,
+  PauseIcon,
   RotateCcwIcon,
   ShuffleIcon,
 } from "lucide-react";
@@ -58,11 +60,22 @@ export function TokenForm() {
     projectRange,
     invocations,
     isLoading,
+    // supportedContractDeployments,
+    isPlaying,
+    autoplayInterval,
+    autoplayMode,
     setContractAddress,
     setProjectId,
     setTokenInvocation,
     initialize,
+    setIsPlaying,
+    setAutoplayInterval,
+    setAutoplayMode,
   } = useTokenFormStore();
+  // const { publicClient } = usePublicClientStore();
+
+  // const [isExpanded, setIsExpanded] = useState(true);
+
   useEffect(() => {
     initialize();
   }, [initialize]);
@@ -90,6 +103,25 @@ export function TokenForm() {
 
   // Hide the drawer trigger when the user is idle
   const isIdle = useIdle();
+
+  // Autoplay effect
+  useEffect(() => {
+    if (!isPlaying || !invocations) return;
+
+    const timer = setInterval(() => {
+      if (autoplayMode === "sequential") {
+        // Go to next token, or wrap around to 0
+        const nextToken = (tokenInvocation ?? 0) + 1;
+        setTokenInvocation(nextToken >= invocations ? 0 : nextToken);
+      } else {
+        // Random mode
+        const randomToken = Math.floor(Math.random() * invocations);
+        setTokenInvocation(randomToken);
+      }
+    }, autoplayInterval * 1000);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, autoplayInterval, autoplayMode, tokenInvocation, invocations, setTokenInvocation]);
 
   return (
     <>
@@ -148,61 +180,108 @@ export function TokenForm() {
                   value={contractAddress}
                   handleChange={setContractAddress}
                 />
+                <BoundNumericInput
+                  label="Project"
+                  value={projectId?.toString() ?? ""}
+                  onValueChange={(value) => {
+                    if (isNaN(Number(value))) {
+                      return;
+                    }
+                    setProjectId(Number(value));
+                  }}
+                  onBlur={(value) => {
+                    if (isNaN(Number(value)) || !projectRange) {
+                      return;
+                    }
+
+                    const clampedId = Math.max(
+                      Math.min(Number(value), projectRange[1]),
+                      projectRange[0]
+                    );
+
+                    setProjectId(clampedId);
+                  }}
+                  min={projectRange?.[0]}
+                  max={projectRange?.[1]}
+                  loading={isLoading.projectRange}
+                  showRandom
+                />
+                <div className="flex flex-col gap-2">
+                  <BoundNumericInput
+                    label="Token"
+                    value={tokenInvocation?.toString() ?? ""}
+                    notice={<OnChainDetails className="ml-1" />}
+                    onValueChange={(value) => {
+                      if (isNaN(Number(value))) {
+                        return;
+                      }
+                      setTokenInvocation(Number(value));
+                    }}
+                    onBlur={(value) => {
+                      if (isNaN(Number(value)) || !invocations) {
+                        return;
+                      }
+
+                      const clampedId = Math.max(
+                        Math.min(Number(value), invocations - 1),
+                        0
+                      );
+
+                      setTokenInvocation(clampedId);
+                    }}
+                    min={0}
+                    max={invocations ? invocations - 1 : 0}
+                    loading={isLoading.invocations}
+                    showRandom
+                  />
+                  <div>
+                    <label className="block w-full mb-2">Auto Play</label>
+                    <button
+                        className={cn("flex items-center opacity-50 hover:opacity-100 transition-opacity", {
+                          "opacity-100": autoplayMode === "random"
+                        })}
+                        onClick={() => setAutoplayMode(autoplayMode === "sequential" ? "random" : "sequential")}
+                        title={`Switch to ${autoplayMode === "sequential" ? "random" : "sequential"} mode`}
+                    >
+                      <ShuffleIcon className="w-4 h-4 stroke-1" />
+                    </button>
+                    <button
+                      className={cn("flex items-center opacity-50 hover:opacity-100 transition-opacity", {
+                        "opacity-100": isPlaying
+                      })}
+                      onClick={() => setIsPlaying(!isPlaying)}
+                      title={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? (
+                        <PauseIcon className="w-4 h-4 stroke-1" />
+                      ) : (
+                        <PlayIcon className="w-4 h-4 stroke-1" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <BoundNumericInput
+                      label="Interval (seconds)"
+                      value={autoplayInterval.toString()}
+                      onValueChange={(value) => {
+                        if (isNaN(Number(value))) {
+                          return;
+                        }
+                        setAutoplayInterval(Number(value));
+                      }}
+                      onBlur={(value) => {
+                        if (isNaN(Number(value))) {
+                          return;
+                        }
+                        const seconds = Number(value);
+                        setAutoplayInterval(Math.max(10, Math.min(86400, seconds)));
+                      }}
+                      min={10}
+                      max={86400}
+                    />
+                  </div>
+                </div>
               </div>
-              <BoundNumericInput
-                label="Project"
-                value={projectId?.toString() ?? ""}
-                onValueChange={(value) => {
-                  if (isNaN(Number(value))) {
-                    return;
-                  }
-                  setProjectId(Number(value));
-                }}
-                onBlur={(value) => {
-                  if (isNaN(Number(value)) || !projectRange) {
-                    return;
-                  }
-
-                  const clampedId = Math.max(
-                    Math.min(Number(value), projectRange[1]),
-                    projectRange[0]
-                  );
-
-                  setProjectId(clampedId);
-                }}
-                min={projectRange?.[0]}
-                max={projectRange?.[1]}
-                loading={isLoading.projectRange}
-                showRandom
-              />
-              <BoundNumericInput
-                label="Token"
-                value={tokenInvocation?.toString() ?? ""}
-                notice={<OnChainDetails className="ml-1" />}
-                onValueChange={(value) => {
-                  if (isNaN(Number(value))) {
-                    return;
-                  }
-
-                  setTokenInvocation(Number(value));
-                }}
-                onBlur={(value) => {
-                  if (!invocations || isNaN(Number(value))) {
-                    return;
-                  }
-
-                  const clampedValue = Math.max(
-                    Math.min(Number(value), invocations - 1),
-                    0
-                  );
-
-                  setTokenInvocation(clampedValue);
-                }}
-                min={0}
-                max={invocations ? invocations - 1 : 0}
-                loading={isLoading.invocations}
-                showRandom
-              />
             </div>
             {/* <JsonRpcUrlForm className="px-4" />
             <DrawerFooter>

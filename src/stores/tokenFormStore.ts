@@ -50,18 +50,30 @@ interface TokenState {
   isLoading: {
     projectRange: boolean;
     invocations: boolean;
+    onChainStatus: boolean;
   };
   supportedContractDeployments: CoreDeployment[];
-  projectOnChainStatus: {
+  onChainStatus: {
     dependencyFullyOnChain: boolean;
     injectsDecentralizedStorageNetworkAssets: boolean;
     hasOffChainFlexDepRegDependencies: boolean;
   } | null;
+
+  // Autoplay state
+  isPlaying: boolean;
+  autoplayInterval: number; // in seconds
+  autoplayMode: "sequential" | "random";
+
   // Actions
   setContractAddress: (address: string) => Promise<void>;
   setProjectId: (id: number) => Promise<void>;
   setTokenInvocation: (invocation: number) => void;
   initialize: () => Promise<void>;
+
+  // Autoplay actions
+  setIsPlaying: (isPlaying: boolean) => void;
+  setAutoplayInterval: (seconds: number) => void;
+  setAutoplayMode: (mode: "sequential" | "random") => void;
 }
 
 export const useTokenFormStore = create<TokenState>((set, get) => ({
@@ -75,8 +87,15 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
     isLoading: {
       projectRange: false,
       invocations: false,
+      onChainStatus: false,
     },
-    projectOnChainStatus: null,
+    supportedContractDeployments: networkCoreDeployments,
+    onChainStatus: null,
+
+    // Initial autoplay state
+    isPlaying: false,
+    autoplayInterval: 30, // default 30 seconds
+    autoplayMode: "sequential" as const,
   },
   ...getInitialStateFromURL(),
   supportedContractDeployments: networkCoreDeployments,
@@ -91,7 +110,7 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
     set({
       projectRange: null,
       projectId: undefined,
-      projectOnChainStatus: null,
+      onChainStatus: null,
       isLoading: { ...get().isLoading, projectRange: true },
     });
     updateURLParams({ projectId: undefined, tokenInvocation: undefined });
@@ -120,7 +139,7 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
         invocations: Number(invocations),
         tokenInvocation: 0,
         isLoading: { ...get().isLoading, projectRange: false },
-        projectOnChainStatus: onChainStatus,
+        onChainStatus: onChainStatus,
       });
       updateURLParams({ projectId: range[0].toString() });
     }
@@ -135,7 +154,7 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
     set({
       invocations: null,
       tokenInvocation: undefined,
-      projectOnChainStatus: null,
+      onChainStatus: null,
       isLoading: { ...get().isLoading, invocations: true },
     });
     updateURLParams({ tokenInvocation: undefined });
@@ -160,7 +179,7 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
         invocations: Number(invocations),
         tokenInvocation: 0, // Auto-select first token
         isLoading: { ...get().isLoading, invocations: false },
-        projectOnChainStatus: onChainStatus,
+        onChainStatus: onChainStatus,
       });
       updateURLParams({ tokenInvocation: "0" });
     }
@@ -242,12 +261,27 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
           invocations: Number(invocations),
           isLoading: { ...get().isLoading, invocations: false },
           tokenInvocation: get().tokenInvocation ?? 0,
-          projectOnChainStatus: onChainStatus,
+          onChainStatus: onChainStatus,
         });
       }
     } else {
       // If no contract address, set default
       await get().setContractAddress(networkCoreDeployments[0].address);
     }
+  },
+
+  // Autoplay actions
+  setIsPlaying: (isPlaying) => {
+    set({ isPlaying });
+  },
+
+  setAutoplayInterval: (seconds) => {
+    // Clamp between 10 and 86400 (24 hours)
+    const clampedSeconds = Math.max(10, Math.min(86400, seconds));
+    set({ autoplayInterval: clampedSeconds });
+  },
+
+  setAutoplayMode: (mode) => {
+    set({ autoplayMode: mode });
   },
 }));
