@@ -173,6 +173,7 @@ export function TokenForm() {
                 min={projectRange?.[0]}
                 max={projectRange?.[1]}
                 loading={isLoading.projectRange}
+                showRandom
               />
               <BoundNumericInput
                 label="Token"
@@ -200,6 +201,7 @@ export function TokenForm() {
                 min={0}
                 max={invocations ? invocations - 1 : 0}
                 loading={isLoading.invocations}
+                showRandom
               />
             </div>
             {/* <JsonRpcUrlForm className="px-4" />
@@ -452,6 +454,7 @@ export function BoundNumericInput({
   max,
   loading,
   className,
+  showRandom = false,
 }: {
   label: React.ReactNode;
   value: string;
@@ -462,6 +465,7 @@ export function BoundNumericInput({
   max?: number;
   loading?: boolean;
   className?: string;
+  showRandom?: boolean;
 }) {
   const id = useId();
 
@@ -521,21 +525,23 @@ export function BoundNumericInput({
               })}
             />
           </button>
-          <button
-            className="flex text-right opacity-50"
-            onClick={() => {
-              if (min === undefined || max === undefined) return;
-              const randomValue = Math.floor(Math.random() * (max - min + 1)) + min;
-              onValueChange(randomValue.toString());
-            }}
-            disabled={min === undefined || max === undefined}
-          >
-            <ShuffleIcon
-              className={cn("w-4 h-4 stroke-1", {
-                "opacity-20": min === undefined || max === undefined,
-              })}
-            />
-          </button>
+          {showRandom && (
+            <button
+              className="flex text-right opacity-50"
+              onClick={() => {
+                if (min === undefined || max === undefined) return;
+                const randomValue = Math.floor(Math.random() * (max - min + 1)) + min;
+                onValueChange(randomValue.toString());
+              }}
+              disabled={min === undefined || max === undefined}
+            >
+              <ShuffleIcon
+                className={cn("w-4 h-4 stroke-1", {
+                  "opacity-20": min === undefined || max === undefined,
+                })}
+              />
+            </button>
+          )}
         </div>
       </div>
     </div>
