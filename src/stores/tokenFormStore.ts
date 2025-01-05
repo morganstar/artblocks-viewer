@@ -159,7 +159,7 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
     });
     updateURLParams({ tokenInvocation: undefined });
 
-    const { contractAddress } = get();
+    const { contractAddress, autoplayMode } = get();
     const coreDeployment = get().supportedContractDeployments.find(
       (d) => d.address.toLowerCase() === contractAddress?.toLowerCase()
     );
@@ -175,13 +175,19 @@ export const useTokenFormStore = create<TokenState>((set, get) => ({
         coreDeployment,
         id
       );
+
+      const numInvocations = Number(invocations);
+      const initialToken = autoplayMode === "random" 
+        ? Math.floor(Math.random() * numInvocations)
+        : 0;
+
       set({
-        invocations: Number(invocations),
-        tokenInvocation: 0, // Auto-select first token
+        invocations: numInvocations,
+        tokenInvocation: initialToken,
         isLoading: { ...get().isLoading, invocations: false },
         onChainStatus: onChainStatus,
       });
-      updateURLParams({ tokenInvocation: "0" });
+      updateURLParams({ tokenInvocation: initialToken.toString() });
     }
   },
 
